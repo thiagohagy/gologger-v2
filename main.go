@@ -15,22 +15,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// MAIN LOGGER
-type AvaliableTags struct {
-	AppLogger             string
-	LocalConfig           string
-	MoovsecConfig         string
-	DockerCLient          string
-	CronHandler           string
-	DatabaseBackupHandler string
-	MediaRemovalRoutine   string
-	RequestHandler        string
-	HttpServer            string
-}
-
 // used to reset the terminal color
 const resetColor = "\033[0m"
 const fileNameTimeFormat = "2006-01-02"
+const libTag = "GOLOGGER"
 
 type LevelColors struct {
 	Log   string
@@ -325,11 +313,11 @@ func (l *AppLogger) rotateLogFileLoop() {
 	}()
 }
 
-func (l *AppLogger) Log(level logrus.Level, message string, fields logrus.Fields) {
+func (l *AppLogger) Log(level logrus.Level, tag string, message string, fields logrus.Fields) {
 	if fields == nil {
 		fields = logrus.Fields{}
 	}
-	fields["tag"] = "App log"
+	fields["tag"] = tag
 	l.FileLogger.WithFields(fields).Log(level, message)
 	l.OsLogger.WithFields(fields).Log(level, message)
 }
@@ -367,13 +355,13 @@ func (l *AppLogger) SetConfig(opts AppLoggerOptions) {
 		l.OsLogger.SetLevel(logrus.FatalLevel)
 	default:
 		l.config.LogLevel = "trace"
-		l.Log(logrus.WarnLevel, "Unknown log level on log config update, trace level set", logrus.Fields{
+		l.Log(logrus.WarnLevel, libTag, "Unknown log level on log config update, trace level set", logrus.Fields{
 			"logLevel": opts.LogLevel,
 		})
 	}
 
 	jsonConfig, _ := json.Marshal(l.config)
-	l.Log(logrus.DebugLevel, "New logger config set", logrus.Fields{
+	l.Log(logrus.DebugLevel, libTag, "New logger config set", logrus.Fields{
 		"newConfig": string(jsonConfig),
 	})
 

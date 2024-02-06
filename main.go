@@ -235,7 +235,7 @@ func (l *AppLogger) checkAndSetLogFile() {
 		l.LastLogFile.Name = logFile
 		l.LastLogFile.File = file
 
-		l.Log(logrus.TraceLevel, "New log file set", logrus.Fields{
+		l.Log(logrus.TraceLevel, libTag, "New log file set", logrus.Fields{
 			"fileName": logFile,
 		})
 	}
@@ -266,12 +266,12 @@ func (l *AppLogger) clearOldLogs() {
 			if diffInDays > float64(l.config.LogFileRotateDays) {
 				err := os.Remove(folderPath + info.Name())
 				if err != nil {
-					l.Log(logrus.ErrorLevel, "Error removing log file", logrus.Fields{
+					l.Log(logrus.ErrorLevel, libTag, "Error removing log file", logrus.Fields{
 						"err":      err.Error(),
 						"fileName": info.Name(),
 					})
 				} else {
-					l.Log(logrus.TraceLevel, "Log file removed", logrus.Fields{
+					l.Log(logrus.TraceLevel, libTag, "Log file removed", logrus.Fields{
 						"fileName": info.Name(),
 					})
 				}
@@ -283,7 +283,7 @@ func (l *AppLogger) clearOldLogs() {
 	})
 
 	if err != nil {
-		l.Log(logrus.ErrorLevel, "Error cleaning older logs", logrus.Fields{
+		l.Log(logrus.ErrorLevel, libTag, "Error cleaning older logs", logrus.Fields{
 			"err": err.Error(),
 		})
 	}
@@ -291,7 +291,7 @@ func (l *AppLogger) clearOldLogs() {
 }
 
 func (l *AppLogger) rotateLogFileLoop() {
-	l.Log(logrus.InfoLevel, "Log file rotation started", nil)
+	l.Log(logrus.InfoLevel, libTag, "Log file rotation started", nil)
 
 	go func() {
 		// Create a ticker for the periodic task

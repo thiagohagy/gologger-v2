@@ -235,7 +235,7 @@ func (l *AppLogger) checkAndSetLogFile() {
 		l.LastLogFile.Name = logFile
 		l.LastLogFile.File = file
 
-		l.Log(logrus.TraceLevel, libTag, "New log file set", logrus.Fields{
+		l.Log(logrus.InfoLevel, libTag, "New log file set", logrus.Fields{
 			"fileName": logFile,
 		})
 	}

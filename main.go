@@ -361,7 +361,7 @@ func (l *AppLogger) SetConfig(opts AppLoggerOptions) {
 	}
 
 	jsonConfig, _ := json.Marshal(l.config)
-	l.Log(logrus.DebugLevel, libTag, "New logger config set", logrus.Fields{
+	l.Log(logrus.InfoLevel, libTag, "New logger config set", logrus.Fields{
 		"newConfig": string(jsonConfig),
 	})
 

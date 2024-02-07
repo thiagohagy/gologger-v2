@@ -291,7 +291,7 @@ func (l *AppLogger) clearOldLogs() {
 }
 
 func (l *AppLogger) rotateLogFileLoop() {
-	l.Log(logrus.InfoLevel, libTag, "Log file rotation started", nil)
+	l.Log(logrus.TraceLevel, libTag, "Log file rotation started", nil)
 
 	go func() {
 		// Create a ticker for the periodic task

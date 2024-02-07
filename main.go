@@ -291,8 +291,6 @@ func (l *AppLogger) clearOldLogs() {
 }
 
 func (l *AppLogger) rotateLogFileLoop() {
-	l.Log(logrus.TraceLevel, libTag, "Log file rotation started", nil)
-
 	go func() {
 		// Create a ticker for the periodic task
 		tickerClearLogs := time.NewTicker(2 * time.Hour)

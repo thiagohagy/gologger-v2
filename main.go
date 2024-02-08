@@ -3,6 +3,7 @@ package gologger
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -144,6 +145,8 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	info := f.getCustomEntryInfo(entry)
 
 	customTag := ""
+
+	log.Println(entry)
 	if info.customTag != "" {
 		customTag = f.getLevelColor(entry.Level) + CompleteString("["+info.customTag+"]"+resetColor, 20, " ") + " "
 	}

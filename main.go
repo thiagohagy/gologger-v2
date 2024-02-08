@@ -116,7 +116,10 @@ type customEntryInfo struct {
 
 func (f *CustomFormatter) getCustomEntryInfo(entry *logrus.Entry) *customEntryInfo {
 
-	info := &customEntryInfo{}
+	info := &customEntryInfo{
+		tag:       "",
+		customTag: "",
+	}
 
 	for i, v := range entry.Data {
 		if i == "tag" {
@@ -147,7 +150,7 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	customTag := ""
 
 	log.Println(entry)
-	if info.customTag != "" {
+	if info.customTag != nil && info.customTag != "" {
 		customTag = f.getLevelColor(entry.Level) + CompleteString("["+info.customTag+"]"+resetColor, 20, " ") + " "
 	}
 

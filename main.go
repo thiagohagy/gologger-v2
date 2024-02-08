@@ -140,23 +140,28 @@ func (f *CustomFormatter) getCustomEntryInfo(entry *logrus.Entry) *customEntryIn
 
 func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	// Customize the log entry format
+
+	info := f.getCustomEntryInfo(entry)
+	customTag := ""
+	if info.customTag != "" {
+		customTag = CompleteString(info.customTag, 20, " ") + " "
+	}
+
 	if f.LogToFile {
-		info := f.getCustomEntryInfo(entry)
 		return []byte(fmt.Sprintf(
 			CompleteString("["+entry.Level.String()+"]", 15, " ") +
 				CompleteString(info.tag, 20, " ") + " " +
-				CompleteString(info.customTag, 20, " ") + " " +
+				customTag +
 				entry.Time.Format("2006-01-02 15:04:05") + "  " +
 				CompleteString(entry.Message, 50, " ") + " " +
 				info.fields +
 				" \n")), nil
 	} else {
-		info := f.getCustomEntryInfo(entry)
 		return []byte(fmt.Sprintf(
 			f.getLevelColor(entry.Level) +
 				CompleteString("["+entry.Level.String()+"]"+resetColor, 15, " ") +
 				CompleteString(info.tag, 20, " ") + " " +
-				f.getLevelColor(entry.Level) + CompleteString(info.customTag+resetColor, 20, " ") + " " +
+				customTag +
 				entry.Time.Format("2006-01-02 15:04:05") + "  " +
 				CompleteString(entry.Message, 50, " ") + " " +
 				info.fields +

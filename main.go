@@ -144,7 +144,7 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	info := f.getCustomEntryInfo(entry)
 	customTag := ""
 	if info.customTag != "" {
-		customTag = CompleteString(info.customTag, 20, " ") + " "
+		customTag = CompleteString("["+info.customTag+"]", 20, " ") + " "
 	}
 
 	if f.LogToFile {

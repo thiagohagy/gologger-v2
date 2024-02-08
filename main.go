@@ -108,6 +108,7 @@ func (f *CustomFormatter) getLevelColor(level logrus.Level) string {
 
 type customEntryInfo struct {
 	tag        string
+	customTag  string
 	levelColor string
 	fields     string
 }
@@ -120,6 +121,10 @@ func (f *CustomFormatter) getCustomEntryInfo(entry *logrus.Entry) *customEntryIn
 		if i == "tag" {
 			info.tag = ConvertToString(v)
 			delete(entry.Data, "tag")
+		}
+		if i == "customTag" {
+			info.customTag = ConvertToString(v)
+			delete(entry.Data, "customTag")
 		}
 	}
 
@@ -139,7 +144,8 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		info := f.getCustomEntryInfo(entry)
 		return []byte(fmt.Sprintf(
 			CompleteString("["+entry.Level.String()+"]", 15, " ") +
-				CompleteString(info.tag, 18, " ") + " " +
+				CompleteString(info.tag, 20, " ") + " " +
+				CompleteString(info.customTag, 20, " ") + " " +
 				entry.Time.Format("2006-01-02 15:04:05") + "  " +
 				CompleteString(entry.Message, 50, " ") + " " +
 				info.fields +
@@ -149,7 +155,8 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		return []byte(fmt.Sprintf(
 			f.getLevelColor(entry.Level) +
 				CompleteString("["+entry.Level.String()+"]"+resetColor, 15, " ") +
-				CompleteString(info.tag, 18, " ") + " " +
+				CompleteString(info.tag, 20, " ") + " " +
+				f.getLevelColor(entry.Level) + CompleteString(info.customTag+resetColor, 20, " ") + " " +
 				entry.Time.Format("2006-01-02 15:04:05") + "  " +
 				CompleteString(entry.Message, 50, " ") + " " +
 				info.fields +
@@ -383,7 +390,11 @@ func (l *ModuleLogger) setTag(args logrus.Fields) (logrus.Fields, string) {
 	if args == nil {
 		args = logrus.Fields{}
 	}
-	args["tag"] = l.tag
+
+	if args["tag"] == nil {
+		args["tag"] = l.tag
+	}
+
 	return args, l.tag
 }
 

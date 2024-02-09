@@ -11,6 +11,7 @@ It is a private project , but once gained access , to install you should use
 Created to make possible to have logs separated by type and module, where you can enable/disable using the tags and logs types
 
 You will have two types of structure, app and module logger
+
 The module loggers will have its own tag
 
 This package will log to your terminal and to a file(one file per day) under a /logs folder in your project root folder

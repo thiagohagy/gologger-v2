@@ -36,7 +36,6 @@ logger.Info("A informative log message", logrus.Fields{
     "data": someDataYouWantToShow
 })
 
-
 // Setting a custom config
 appLogger.SetConfig(
     gologger.AppLoggerOptions{

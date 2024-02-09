@@ -140,7 +140,7 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		return []byte(fmt.Sprintf(
 			CompleteString("["+entry.Level.String()+"]", 15, " ") +
 				CompleteString(info.tag, 18, " ") + " " +
-				entry.Time.Format("2006-01-02 15:04:05:000") + "  " +
+				entry.Time.Format("2006-01-02 15:04:05.000") + "  " +
 				CompleteString(entry.Message, 50, " ") + " " +
 				info.fields +
 				" \n")), nil
@@ -150,7 +150,7 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 			f.getLevelColor(entry.Level) +
 				CompleteString("["+entry.Level.String()+"]"+resetColor, 15, " ") +
 				CompleteString(info.tag, 18, " ") + " " +
-				entry.Time.Format("2006-01-02 15:04:05:000") + "  " +
+				entry.Time.Format("2006-01-02 15:04:05.000") + "  " +
 				CompleteString(entry.Message, 50, " ") + " " +
 				info.fields +
 				" \n")), nil

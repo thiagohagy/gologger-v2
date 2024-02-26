@@ -4,7 +4,12 @@
 A golang custom logger based on the loggrus logger:
 https://github.com/sirupsen/logrus
 
-It is a private project , but once gained access , to install you should use
+To gain access to the project you need to:
+
+- Add you email as a project colaborator
+- Use the command export GOPRIVATE=github.com/thiagohagy/gologger
+
+Then install it by using:
 
 ```go get github.com/thiagohagy/gologger```
 

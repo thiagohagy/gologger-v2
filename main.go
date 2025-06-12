@@ -1,13 +1,14 @@
-package gologger
+// package gologger
+package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -31,18 +32,34 @@ type LevelColors struct {
 	Fatal string
 }
 
+type MessageOptions struct {
+	DisableSpacing         bool   `desc:"Disable spacing between log fields"`
+	ContentDelimiter       string `desc:"Character used to separate log fields"`
+	TextFiller             string `desc:"Character used to fill the prealocated space for message and tags if DisableSpacing is false "`
+	MessagePrealocatedSize int    `desc:"Minimum space reserved for the message"`
+	TagPrealocatedSize     int    `desc:"Minimum space reserved for the tag/subtags"`
+	DateFormat             string `desc:"Date format"`
+	UseJsonOutput          bool   `desc:"If you want to use the json output format, overwrite other options"`
+}
+
 type AppLoggerOptions struct {
-	LogFileRotateDays int
-	DisabledTags      []string
-	LogLevel          string
+	LogFileRotateDays int             `desc:"Total of days a log file is kept"`
+	FileLogDisabled   bool            `desc:"Disable file logging"`
+	DisabledTags      []string        `desc:"Used to prevent logs from being printed"`
+	LogLevel          string          `desc:"Starting log level, wil hide all levels bellow it"`
+	MessageOptions    *MessageOptions `desc:"Message configuration"`
 }
 
 type AppLogger struct {
-	EnabledTags []string
 	FileLogger  *logrus.Logger
 	LastLogFile *LogFileInfo
 	OsLogger    *logrus.Logger
 	config      *AppLoggerOptions
+}
+
+type Logger struct {
+	tag       string
+	appLogger *AppLogger
 }
 
 type LogFileInfo struct {
@@ -55,130 +72,158 @@ type CustomFormatter struct {
 	LogToFile   bool
 }
 
-func (f *CustomFormatter) getFieldsAsString(fields logrus.Fields) string {
-	// Customize the log entry format
-	var result string
-	var fieldCount = 0
+type LogLevelType = logrus.Level
 
-	keys := make([]string, 0, len(fields))
-
-	for k := range fields {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, key := range keys {
-		fieldCount += 1
-		pre := ""
-		if fieldCount > 1 {
-			pre = ", "
-		}
-		result = result + fmt.Sprintf("%s%s: %s", pre, ConvertToString(key), ConvertToString(fields[key]))
-	}
-
-	return result
-}
-
-func (f *CustomFormatter) getLevelColor(level logrus.Level) string {
-	var levelColor string
-
-	// Compare the log level to specific logrus constants
-	switch level {
-	case logrus.InfoLevel:
-		levelColor = f.LevelColors.Info
-	case logrus.WarnLevel:
-		levelColor = f.LevelColors.Warn
-	case logrus.ErrorLevel:
-		levelColor = f.LevelColors.Error
-	case logrus.DebugLevel:
-		levelColor = f.LevelColors.Debug
-	case logrus.PanicLevel:
-		levelColor = f.LevelColors.Panic
-	case logrus.TraceLevel:
-		levelColor = f.LevelColors.Trace
-	case logrus.FatalLevel:
-		levelColor = f.LevelColors.Fatal
-	default:
-		levelColor = f.LevelColors.Log
-	}
-
-	return levelColor
-
-}
+const (
+	InfoLevel  LogLevelType = logrus.InfoLevel
+	WarnLevel  LogLevelType = logrus.WarnLevel
+	ErrorLevel LogLevelType = logrus.ErrorLevel
+	DebugLevel LogLevelType = logrus.DebugLevel
+	TraceLevel LogLevelType = logrus.TraceLevel
+	PanicLevel LogLevelType = logrus.PanicLevel
+	FatalLevel LogLevelType = logrus.FatalLevel
+)
 
 type customEntryInfo struct {
-	tag        string
-	levelColor string
-	fields     string
+	tag                    string
+	subTags                string
+	levelColor             string
+	content                string
+	contentDelimiter       string
+	disableSpacing         bool
+	textFiller             string
+	messagePrealocatedSize int
+	tagPrealocatedSize     int
+	dateFormat             string
+	useJsonOutput          bool
 }
 
-func (f *CustomFormatter) getCustomEntryInfo(entry *logrus.Entry) *customEntryInfo {
+func main() {
+	appLogger := NewMainLogger(&AppLoggerOptions{
+		LogFileRotateDays: 30,
+		FileLogDisabled:   false,
+		LogLevel:          "trace",
+		MessageOptions: &MessageOptions{
+			DisableSpacing:         false,
+			ContentDelimiter:       "|",
+			TextFiller:             "",
+			MessagePrealocatedSize: 30,
+			TagPrealocatedSize:     30,
+			UseJsonOutput:          false,
+		},
+	})
 
-	info := &customEntryInfo{}
+	appLogger.Log(
+		ErrorLevel, "MEU APP", []string{"tag1", "tag2"}, "Minha mensagem", "campo1", "campo2", "campo3",
+	)
 
-	for i, v := range entry.Data {
-		if i == "tag" {
-			info.tag = ConvertToString(v)
-			delete(entry.Data, "tag")
-		}
-	}
+	moduloLogger := NewLogger("DEFAULT", appLogger)
 
-	// this must stay here, will make all the terminal colored if is done before the "delete" above
-	if !f.LogToFile {
-		info.levelColor = f.getLevelColor(entry.Level)
-	}
+	go func() {
+		subTags1 := []string{"tag", "tag"}
+		moduloLogger.Info("Mensagem 1", subTags1, "meu campo", "10")
 
-	info.fields = f.getFieldsAsString(entry.Data)
+		moduloLogger.Trace("Mensagem 1", subTags1, "Campo", "meu campo", "10")
 
-	return info
+		moduloLogger.Debug("Mensagem 1", subTags1, "Campo", "meu campo", "10")
+
+		subTags1 = []string{"R1", "testes1"}
+		moduloLogger.Error("Mensagem 2", subTags1, "Campo", "meu campo", "0")
+
+		subTags1 = []string{"R1", "testes1", "testes1"}
+		moduloLogger.Warn("Mensagem 3", subTags1, "Campo", "meu campo", "10")
+	}()
+
+	go func() {
+		var subTags2 []string
+
+		moduloLogger.Info("Mensagem 1", subTags2, "meu campo", "10")
+
+		moduloLogger.Trace("Mensagem 1", subTags2, "Campo", "meu campo", "10")
+
+		moduloLogger.Debug("Mensagem 1", subTags2, "Campo", "meu campo", "10")
+
+		subTags2 = []string{"R1", "testes1"}
+		moduloLogger.Error("Mensagem 2", subTags2, "Campo", "meu campo", "10")
+
+		subTags2 = []string{"R1", "testes1", "testes1"}
+		moduloLogger.Warn("Mensagem 3", subTags2, "Campo", "meu campo", "10")
+	}()
+
+	time.Sleep(time.Second * 5)
+}
+
+type JsonOutput struct {
+	Time    string `json:"time"`
+	Tag     string `json:"tag"`
+	Level   string `json:"level"`
+	Message string `json:"message"`
+	SubTags string `json:"subTags,omitempty"`
+	Content string `json:"content,omitempty"`
 }
 
 func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	// Customize the log entry format
-	if f.LogToFile {
-		info := f.getCustomEntryInfo(entry)
-		return []byte(fmt.Sprintf(
-			CompleteString("["+entry.Level.String()+"]", 15, " ") +
-				CompleteString(info.tag, 18, " ") + " " +
-				entry.Time.Format("2006-01-02 15:04:05.000") + "  " +
-				CompleteString(entry.Message, 50, " ") + " " +
-				info.fields +
-				" \n")), nil
-	} else {
-		info := f.getCustomEntryInfo(entry)
-		return []byte(fmt.Sprintf(
-			f.getLevelColor(entry.Level) +
-				CompleteString("["+entry.Level.String()+"]"+resetColor, 15, " ") +
-				CompleteString(info.tag, 18, " ") + " " +
-				entry.Time.Format("2006-01-02 15:04:05.000") + "  " +
-				CompleteString(entry.Message, 50, " ") + " " +
-				info.fields +
-				" \n")), nil
+	info := f.getCustomEntryInfo(entry)
+	var output []byte
+	dateFormat := "2006-01-02 15:04:05.000"
+	if info.dateFormat != "" {
+		dateFormat = info.dateFormat
 	}
+
+	if info.useJsonOutput || f.LogToFile {
+		jsonLog := &JsonOutput{
+			Time:    entry.Time.Format(dateFormat),
+			Tag:     info.tag,
+			SubTags: info.subTags,
+			Level:   entry.Level.String(),
+			Message: entry.Message,
+			Content: info.content,
+		}
+
+		output, _ = json.Marshal(jsonLog)
+		output = bytes.Join([][]byte{output, []byte("\r\n")}, []byte(""))
+	} else {
+		messageSize := 50
+		tagSize := 25
+		levelSize := 10
+		contentDelimiter := " "
+		subTags := info.subTags
+
+		if info.messagePrealocatedSize > 0 {
+			messageSize = info.messagePrealocatedSize
+		}
+
+		if info.tagPrealocatedSize > 0 {
+			tagSize = info.tagPrealocatedSize
+		}
+
+		if info.contentDelimiter != "" {
+			contentDelimiter = info.contentDelimiter
+		}
+
+		endContent := info.textFiller + contentDelimiter
+		finalLogText := CompleteString(entry.Time.Format(dateFormat), len(dateFormat)+1, info.textFiller, info.disableSpacing) + endContent
+		finalLogText += f.getLevelColor(entry.Level)
+		finalLogText += CompleteString("["+entry.Level.String()+"]", levelSize, info.textFiller, info.disableSpacing) + endContent
+		finalLogText += CompleteString(info.tag+contentDelimiter+subTags+resetColor, tagSize, info.textFiller, info.disableSpacing) + endContent
+		finalLogText += CompleteString(entry.Message, messageSize, info.textFiller, info.disableSpacing) + endContent
+		finalLogText += info.content + " \n"
+		output = []byte(finalLogText)
+	}
+
+	return output, nil
 
 }
 
-func NewMainLogger() *AppLogger {
+func NewMainLogger(config *AppLoggerOptions) *AppLogger {
 	// initial logger params with basic configuration, will be updated by the config
 	logger := &AppLogger{
-		config: &AppLoggerOptions{
-			LogFileRotateDays: 30,
-		},
+		config: config,
 	}
 
-	fileLogger := logrus.New()
-	osLogger := logrus.New()
-
-	// file logger
-	logFile := logger.getLogFileName()
-	file := logger.createLogFile(logFile)
-	fileLogger.SetOutput(file)
-	fileLogger.SetLevel(logrus.TraceLevel)
-	fileLogger.SetFormatter(&CustomFormatter{
-		LogToFile: true,
-	})
-
 	// os logger
+	osLogger := logrus.New()
 	osLogger.SetOutput(os.Stdout)
 	osLogger.SetLevel(logrus.TraceLevel)
 	osLogger.SetFormatter(&CustomFormatter{
@@ -195,14 +240,27 @@ func NewMainLogger() *AppLogger {
 			Fatal: "\033[31m",
 		},
 	})
-
-	logger.FileLogger = fileLogger
-	logger.LastLogFile = &LogFileInfo{
-		Name: logFile,
-		File: file,
-	}
 	logger.OsLogger = osLogger
-	logger.rotateLogFileLoop()
+
+	// file logger
+	if !config.FileLogDisabled {
+		fileLogger := logrus.New()
+		logFile := logger.getLogFileName()
+		file := logger.createLogFile(logFile)
+		fileLogger.SetOutput(file)
+		fileLogger.SetLevel(logrus.TraceLevel)
+		fileLogger.SetFormatter(&CustomFormatter{
+			LogToFile: true,
+		})
+		logger.FileLogger = fileLogger
+		logger.LastLogFile = &LogFileInfo{
+			Name: logFile,
+			File: file,
+		}
+		logger.rotateLogFileLoop()
+	}
+
+	logger.SetConfig(*logger.config)
 
 	return logger
 }
@@ -235,9 +293,7 @@ func (l *AppLogger) checkAndSetLogFile() {
 		l.LastLogFile.Name = logFile
 		l.LastLogFile.File = file
 
-		l.Log(logrus.InfoLevel, libTag, "New log file set", logrus.Fields{
-			"fileName": logFile,
-		})
+		l.Log(logrus.InfoLevel, libTag, nil, "New log file set", logFile)
 	}
 }
 
@@ -266,14 +322,9 @@ func (l *AppLogger) clearOldLogs() {
 			if diffInDays > float64(l.config.LogFileRotateDays) {
 				err := os.Remove(folderPath + info.Name())
 				if err != nil {
-					l.Log(logrus.ErrorLevel, libTag, "Error removing log file", logrus.Fields{
-						"err":      err.Error(),
-						"fileName": info.Name(),
-					})
+					l.Log(logrus.ErrorLevel, libTag, nil, "Error removing log file", err.Error(), info.Name())
 				} else {
-					l.Log(logrus.TraceLevel, libTag, "Log file removed", logrus.Fields{
-						"fileName": info.Name(),
-					})
+					l.Log(logrus.TraceLevel, libTag, nil, "Log file removed", info.Name())
 				}
 
 			}
@@ -283,9 +334,7 @@ func (l *AppLogger) clearOldLogs() {
 	})
 
 	if err != nil {
-		l.Log(logrus.ErrorLevel, libTag, "Error cleaning older logs", logrus.Fields{
-			"err": err.Error(),
-		})
+		l.Log(logrus.ErrorLevel, libTag, nil, "Error cleaning older logs", err.Error())
 	}
 
 }
@@ -311,13 +360,24 @@ func (l *AppLogger) rotateLogFileLoop() {
 	}()
 }
 
-func (l *AppLogger) Log(level logrus.Level, tag string, message string, fields logrus.Fields) {
-	if fields == nil {
-		fields = logrus.Fields{}
-	}
+func (l *AppLogger) Log(level LogLevelType, tag string, subTags []string, message string, content ...string) {
+	fields := map[string]any{}
 	fields["tag"] = tag
-	l.FileLogger.WithFields(fields).Log(level, message)
+	fields["subTags"] = subTags
+	fields["contentDelimiter"] = l.config.MessageOptions.ContentDelimiter
+	fields["disableSpacing"] = l.config.MessageOptions.DisableSpacing
+	fields["textFiller"] = l.config.MessageOptions.TextFiller
+	fields["messagePrealocatedSize"] = l.config.MessageOptions.MessagePrealocatedSize
+	fields["tagPrealocatedSize"] = l.config.MessageOptions.TagPrealocatedSize
+	fields["dateFormat"] = l.config.MessageOptions.DateFormat
+	fields["useJsonOutput"] = l.config.MessageOptions.UseJsonOutput
+	fields["content"] = content
+
 	l.OsLogger.WithFields(fields).Log(level, message)
+
+	if !l.config.FileLogDisabled {
+		l.FileLogger.WithFields(fields).Log(level, message)
+	}
 }
 
 func (l *AppLogger) SetConfig(opts AppLoggerOptions) {
@@ -353,114 +413,132 @@ func (l *AppLogger) SetConfig(opts AppLoggerOptions) {
 		l.OsLogger.SetLevel(logrus.FatalLevel)
 	default:
 		l.config.LogLevel = "trace"
-		l.Log(logrus.WarnLevel, libTag, "Unknown log level on log config update, trace level set", logrus.Fields{
-			"logLevel": opts.LogLevel,
-		})
+		l.Log(logrus.WarnLevel, libTag, nil, "Unknown log level on log config update, trace level set", opts.LogLevel)
 	}
 
 	jsonConfig, _ := json.Marshal(l.config)
-	l.Log(logrus.InfoLevel, libTag, "New logger config set", logrus.Fields{
-		"newConfig": string(jsonConfig),
-	})
+	l.Log(logrus.InfoLevel, libTag, nil, "New logger config set", string(jsonConfig))
 
 }
 
-// MODULE LOGGER
-type ModuleLogger struct {
-	tag       string
-	appLogger *AppLogger
-}
+// LOGGER
 
-func NewModuleLogger(tag string, appLogr *AppLogger) *ModuleLogger {
-	logger := &ModuleLogger{
+func NewLogger(tag string, appLogr *AppLogger) *Logger {
+	logger := &Logger{
 		tag:       tag,
 		appLogger: appLogr,
 	}
+
 	return logger
 }
 
-func (l *ModuleLogger) setTag(args logrus.Fields) (logrus.Fields, string) {
-	if args == nil {
-		args = logrus.Fields{}
-	}
-	args["tag"] = l.tag
-	return args, l.tag
+func (l *Logger) setHelperValues(subTags []string, content []string) (map[string]any, string) {
+	// we set the custom values here to use it in the custom formatter
+	argsMap := map[string]any{}
+	// required
+	argsMap["tag"] = l.tag
+	// optional
+	argsMap["subTags"] = subTags
+	argsMap["contentDelimiter"] = l.appLogger.config.MessageOptions.ContentDelimiter
+	argsMap["disableSpacing"] = l.appLogger.config.MessageOptions.DisableSpacing
+	argsMap["textFiller"] = l.appLogger.config.MessageOptions.TextFiller
+	argsMap["messagePrealocatedSize"] = l.appLogger.config.MessageOptions.MessagePrealocatedSize
+	argsMap["tagPrealocatedSize"] = l.appLogger.config.MessageOptions.TagPrealocatedSize
+	argsMap["dateFormat"] = l.appLogger.config.MessageOptions.DateFormat
+	argsMap["useJsonOutput"] = l.appLogger.config.MessageOptions.UseJsonOutput
+	argsMap["content"] = content
+	return argsMap, l.tag
 }
 
-func (l *ModuleLogger) Log(level logrus.Level, message string, args logrus.Fields) {
-	args, tag := l.setTag(args)
+func (l *Logger) Log(level logrus.Level, message string, subTags []string, args ...string) {
+	logArgs, tag := l.setHelperValues(subTags, args)
 	if slices.Contains(l.appLogger.config.DisabledTags, tag) {
 		return
 	}
-	l.appLogger.FileLogger.WithFields(args).Log(level, message)
-	l.appLogger.OsLogger.WithFields(args).Log(level, message)
+	if !l.appLogger.config.FileLogDisabled {
+		l.appLogger.FileLogger.WithFields(logArgs).Log(level, message)
+	}
+	l.appLogger.OsLogger.WithFields(logArgs).Log(level, message)
 }
 
-func (l *ModuleLogger) Warn(message string, args logrus.Fields) {
-	args, tag := l.setTag(args)
+func (l *Logger) Warn(message string, subTags []string, content ...string) {
+	args, tag := l.setHelperValues(subTags, content)
 	if slices.Contains(l.appLogger.config.DisabledTags, tag) {
 		return
 	}
-	l.appLogger.FileLogger.WithFields(args).Warn(message)
+	if !l.appLogger.config.FileLogDisabled {
+		l.appLogger.FileLogger.WithFields(args).Warn(message)
+	}
 	l.appLogger.OsLogger.WithFields(args).Warn(message)
 }
 
-func (l *ModuleLogger) Info(message string, args logrus.Fields) {
-	args, tag := l.setTag(args)
+func (l *Logger) Info(message string, subTags []string, content ...string) {
+	args, tag := l.setHelperValues(subTags, content)
 	if slices.Contains(l.appLogger.config.DisabledTags, tag) {
 		return
 	}
-	l.appLogger.FileLogger.WithFields(args).Info(message)
+	if !l.appLogger.config.FileLogDisabled {
+		l.appLogger.FileLogger.WithFields(args).Info(message)
+	}
 	l.appLogger.OsLogger.WithFields(args).Info(message)
 }
 
-func (l *ModuleLogger) Error(message string, args logrus.Fields) {
-	args, tag := l.setTag(args)
+func (l *Logger) Error(message string, subTags []string, content ...string) {
+	args, tag := l.setHelperValues(subTags, content)
 	if slices.Contains(l.appLogger.config.DisabledTags, tag) {
 		return
 	}
-	l.appLogger.FileLogger.WithFields(args).Error(message)
+	if !l.appLogger.config.FileLogDisabled {
+		l.appLogger.FileLogger.WithFields(args).Error(message)
+	}
 	l.appLogger.OsLogger.WithFields(args).Error(message)
 }
 
-func (l *ModuleLogger) Debug(message string, args logrus.Fields) {
-	args, tag := l.setTag(args)
+func (l *Logger) Debug(message string, subTags []string, content ...string) {
+	args, tag := l.setHelperValues(subTags, content)
 	if slices.Contains(l.appLogger.config.DisabledTags, tag) {
 		return
 	}
-	l.appLogger.FileLogger.WithFields(args).Debug(message)
+	if !l.appLogger.config.FileLogDisabled {
+		l.appLogger.FileLogger.WithFields(args).Debug(message)
+	}
 	l.appLogger.OsLogger.WithFields(args).Debug(message)
 }
 
-func (l *ModuleLogger) Panic(message string, args logrus.Fields) {
-	args, tag := l.setTag(args)
+func (l *Logger) Panic(message string, subTags []string, content ...string) {
+	args, tag := l.setHelperValues(subTags, content)
 	if slices.Contains(l.appLogger.config.DisabledTags, tag) {
 		return
 	}
-	l.appLogger.FileLogger.WithFields(args).Panic(message)
+	if !l.appLogger.config.FileLogDisabled {
+		l.appLogger.FileLogger.WithFields(args).Panic(message)
+	}
 	l.appLogger.OsLogger.WithFields(args).Panic(message)
 }
 
-func (l *ModuleLogger) Trace(message string, args logrus.Fields) {
-	args, tag := l.setTag(args)
+func (l *Logger) Trace(message string, subTags []string, content ...string) {
+	args, tag := l.setHelperValues(subTags, content)
 	if slices.Contains(l.appLogger.config.DisabledTags, tag) {
 		return
 	}
-	l.appLogger.FileLogger.WithFields(args).Trace(message)
+	if !l.appLogger.config.FileLogDisabled {
+		l.appLogger.FileLogger.WithFields(args).Trace(message)
+	}
 	l.appLogger.OsLogger.WithFields(args).Trace(message)
 }
 
-func (l *ModuleLogger) Fatal(message string, args logrus.Fields) {
-	args, tag := l.setTag(args)
+func (l *Logger) Fatal(message string, subTags []string, content ...string) {
+	args, tag := l.setHelperValues(subTags, content)
 	if slices.Contains(l.appLogger.config.DisabledTags, tag) {
 		return
 	}
-	l.appLogger.FileLogger.WithFields(args).Fatal(message)
+	if !l.appLogger.config.FileLogDisabled {
+		l.appLogger.FileLogger.WithFields(args).Fatal(message)
+	}
 	l.appLogger.OsLogger.WithFields(args).Fatal(message)
 }
 
 // util functions
-
 func CreateFolderIfNotExists(folderPath string) error {
 	// Check if the folder already exists
 	_, err := os.Stat(folderPath)
@@ -479,11 +557,15 @@ func CreateFolderIfNotExists(folderPath string) error {
 	return nil
 }
 
-func CompleteString(originalString string, targetLength int, fillChar string) string {
+func CompleteString(originalString string, targetLength int, fillChar string, disableSpacing bool) string {
 	// fill the original string with the fillChar
 	resultString := originalString
 	// Customize the log entry format
-	if len(resultString) < targetLength {
+
+	if !disableSpacing && len(resultString) < targetLength {
+		if fillChar == "" {
+			fillChar = " "
+		}
 		charsToAdd := targetLength - len(originalString)
 		additionalChars := strings.Repeat(fillChar, charsToAdd)
 		resultString = originalString + additionalChars
@@ -493,6 +575,7 @@ func CompleteString(originalString string, targetLength int, fillChar string) st
 }
 
 func ConvertToString(value interface{}) string {
+
 	switch v := value.(type) {
 	case string:
 		return v
@@ -500,7 +583,107 @@ func ConvertToString(value interface{}) string {
 		return strconv.Itoa(v)
 	case float64:
 		return strconv.FormatFloat(v, 'f', -1, 64)
+	case []string:
+		strSlice := make([]string, len(v))
+		for i, item := range v {
+			strSlice[i] = ConvertToString(item)
+		}
+		return strings.Join(strSlice, ",")
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+func InterfaceToStringSlice(input interface{}) []string {
+	if slice, ok := input.([]string); ok {
+		return slice
+	}
+	return []string{}
+}
+
+func (f *CustomFormatter) getLevelColor(level logrus.Level) string {
+	var levelColor string
+	// Compare the log level to specific logrus constants
+	switch level {
+	case logrus.InfoLevel:
+		levelColor = f.LevelColors.Info
+	case logrus.WarnLevel:
+		levelColor = f.LevelColors.Warn
+	case logrus.ErrorLevel:
+		levelColor = f.LevelColors.Error
+	case logrus.DebugLevel:
+		levelColor = f.LevelColors.Debug
+	case logrus.PanicLevel:
+		levelColor = f.LevelColors.Panic
+	case logrus.TraceLevel:
+		levelColor = f.LevelColors.Trace
+	case logrus.FatalLevel:
+		levelColor = f.LevelColors.Fatal
+	default:
+		levelColor = f.LevelColors.Log
+	}
+	return levelColor
+}
+
+func (f *CustomFormatter) getCustomEntryInfo(entry *logrus.Entry) *customEntryInfo {
+
+	info := &customEntryInfo{}
+
+	for i, v := range entry.Data {
+		switch i {
+		case "tag":
+			info.tag = ConvertToString(v)
+			delete(entry.Data, "tag")
+		case "content":
+			info.content = ConvertToString(v)
+			delete(entry.Data, "content")
+		case "contentDelimiter":
+			info.contentDelimiter = ConvertToString(v)
+			delete(entry.Data, "contentDelimiter")
+		case "dateFormat":
+			info.dateFormat = ConvertToString(v)
+			delete(entry.Data, "dateFormat")
+		case "messagePrealocatedSize":
+			valInt, _ := strconv.ParseInt(ConvertToString(v), 10, 0)
+			info.messagePrealocatedSize = int(valInt)
+			delete(entry.Data, "messagePrealocatedSize")
+		case "tagPrealocatedSize":
+			valInt, _ := strconv.ParseInt(ConvertToString(v), 10, 0)
+			info.tagPrealocatedSize = int(valInt)
+			delete(entry.Data, "tagPrealocatedSize")
+		case "textFiller":
+			info.textFiller = ConvertToString(v)
+			delete(entry.Data, "textFiller")
+		case "useJsonOutput":
+			if v == true {
+				info.useJsonOutput = true
+			} else {
+				info.useJsonOutput = false
+			}
+			delete(entry.Data, "useJsonOutput")
+		case "disableSpacing":
+			if v == true {
+				info.disableSpacing = true
+			} else {
+				info.disableSpacing = false
+			}
+			delete(entry.Data, "disableSpacing")
+		case "subTags":
+			subTags := ConvertToString(v)
+			if len(subTags) > 0 {
+				info.subTags = subTags
+			} else {
+				info.subTags = ""
+			}
+			delete(entry.Data, "subTags")
+		default:
+		}
+	}
+
+	// this must stay here, will make all the terminal colored if is done before the "delete" above
+	if !f.LogToFile {
+		info.levelColor = f.getLevelColor(entry.Level)
+	}
+
+	return info
 }

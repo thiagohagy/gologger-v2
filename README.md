@@ -106,23 +106,12 @@ appLogger.SetConfig(
 )
 ~~~
 
-#### Creating a custom logger for your app:
-To use it as inttended, you should create multiple Loggers, each one with a unique Tag
+#### Creating Loggers for your app:
+To use it as intended, you should create multiple Loggers, each one with a unique Tag
 To create new Loggers you only need to pass the appLogger created and a unique Tag
 For the subTags you can use a variable , nil or define its value each time
 
-Log function definition:
 ~~~go
-func (l *Logger) Trace(message string, subTags []string, content ...string) {...}
-~~~
-
-Log functions params:
-- Message: Message you want to print
-- SubTags (optional): Helps identifying you logs
-- A indefinite number of string values, they will be printed as "content" in the log 
-
-~~~go
-
 // creating a logger
 logger := gologger.NewLogger("YOUR_MODULE_LOG_TAG", appLogger)
 
@@ -136,6 +125,18 @@ logger.Trace("Message 2", subTags, "OptionalField", "OptionalField2")
 logger.Warn("Message 3", []string{"customSubTag1","customSubTag2"}, "OptionalField", "OptionalField2", "10")
 
 ~~~
+
+
+Log function definition:
+~~~go
+func (l *Logger) Trace(message string, subTags []string, content ...string) {...}
+~~~
+
+Log functions params:
+- Message: Message you want to print
+- SubTags (optional): Helps identifying you logs
+- A indefinite number of string values, they will be printed as "content" in the log 
+
 The above code will output this logs in the terminal:
 
 ![alt text](image.png)

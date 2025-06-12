@@ -14,8 +14,6 @@ You will have two types of structure, the MainLogger and Logger
 
 The MainLogger is used to configure how the logs will work, you can have more, but is usual to have only one MainLogger per app
 
-You can have many Loggers as you want for your packages or modules
-
 #### Configuration options #### 
 - DisabledTags
     The option will make the logger not print logs with the given tags
@@ -56,7 +54,7 @@ The order that is used when limiting the logs is: (from more important to less i
 - Fatal
 - Panic
 
-If you set the logLevel to Error, all levels above it (Warn, Info, Debug, Trace) will not be printed anywhere
+If you set the logLevel to Error, all less important levels(Warn, Info, Debug, Trace) will not be printed anywhere
 
 #### MainLogger ####
 
@@ -108,7 +106,9 @@ appLogger.SetConfig(
 
 #### Creating Loggers for your app:
 To use it as intended, you should create multiple Loggers, each one with a unique Tag
+
 To create new Loggers you only need to pass the appLogger created and a unique Tag
+
 For the subTags you can use a variable , nil or define its value each time
 
 ~~~go

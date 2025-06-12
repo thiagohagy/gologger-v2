@@ -1,5 +1,4 @@
-// package gologger
-package main
+package gologger
 
 import (
 	"bytes"
@@ -96,61 +95,6 @@ type customEntryInfo struct {
 	tagPrealocatedSize     int
 	dateFormat             string
 	useJsonOutput          bool
-}
-
-func main() {
-	appLogger := NewMainLogger(&AppLoggerOptions{
-		LogFileRotateDays: 30,
-		FileLogDisabled:   false,
-		LogLevel:          "trace",
-		MessageOptions: &MessageOptions{
-			DisableSpacing:         false,
-			ContentDelimiter:       "|",
-			TextFiller:             "",
-			MessagePrealocatedSize: 30,
-			TagPrealocatedSize:     30,
-			UseJsonOutput:          false,
-		},
-	})
-
-	appLogger.Log(
-		ErrorLevel, "MEU APP", []string{"tag1", "tag2"}, "Minha mensagem", "campo1", "campo2", "campo3",
-	)
-
-	moduloLogger := NewLogger("DEFAULT", appLogger)
-
-	go func() {
-		subTags1 := []string{"tag", "tag"}
-		moduloLogger.Info("Mensagem 1", subTags1, "meu campo", "10")
-
-		moduloLogger.Trace("Mensagem 1", subTags1, "Campo", "meu campo", "10")
-
-		moduloLogger.Debug("Mensagem 1", subTags1, "Campo", "meu campo", "10")
-
-		subTags1 = []string{"R1", "testes1"}
-		moduloLogger.Error("Mensagem 2", subTags1, "Campo", "meu campo", "0")
-
-		subTags1 = []string{"R1", "testes1", "testes1"}
-		moduloLogger.Warn("Mensagem 3", subTags1, "Campo", "meu campo", "10")
-	}()
-
-	go func() {
-		var subTags2 []string
-
-		moduloLogger.Info("Mensagem 1", subTags2, "meu campo", "10")
-
-		moduloLogger.Trace("Mensagem 1", subTags2, "Campo", "meu campo", "10")
-
-		moduloLogger.Debug("Mensagem 1", subTags2, "Campo", "meu campo", "10")
-
-		subTags2 = []string{"R1", "testes1"}
-		moduloLogger.Error("Mensagem 2", subTags2, "Campo", "meu campo", "10")
-
-		subTags2 = []string{"R1", "testes1", "testes1"}
-		moduloLogger.Warn("Mensagem 3", subTags2, "Campo", "meu campo", "10")
-	}()
-
-	time.Sleep(time.Second * 5)
 }
 
 type JsonOutput struct {

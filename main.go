@@ -335,28 +335,44 @@ func (l *AppLogger) SetConfig(opts AppLoggerOptions) {
 
 	switch opts.LogLevel {
 	case "info":
-		l.FileLogger.SetLevel(logrus.InfoLevel)
+		if !l.config.FileLogDisabled {
+			l.FileLogger.SetLevel(logrus.InfoLevel)
+		}
 		l.OsLogger.SetLevel(logrus.InfoLevel)
 	case "warn":
-		l.FileLogger.SetLevel(logrus.WarnLevel)
+		if !l.config.FileLogDisabled {
+			l.FileLogger.SetLevel(logrus.WarnLevel)
+		}
 		l.OsLogger.SetLevel(logrus.WarnLevel)
 	case "error":
-		l.FileLogger.SetLevel(logrus.ErrorLevel)
+		if !l.config.FileLogDisabled {
+			l.FileLogger.SetLevel(logrus.ErrorLevel)
+		}
 		l.OsLogger.SetLevel(logrus.ErrorLevel)
 	case "debug":
-		l.FileLogger.SetLevel(logrus.DebugLevel)
+		if !l.config.FileLogDisabled {
+			l.FileLogger.SetLevel(logrus.DebugLevel)
+		}
 		l.OsLogger.SetLevel(logrus.DebugLevel)
 	case "trace":
-		l.FileLogger.SetLevel(logrus.TraceLevel)
+		if !l.config.FileLogDisabled {
+			l.FileLogger.SetLevel(logrus.TraceLevel)
+		}
 		l.OsLogger.SetLevel(logrus.TraceLevel)
 	case "panic":
-		l.FileLogger.SetLevel(logrus.PanicLevel)
+		if !l.config.FileLogDisabled {
+			l.FileLogger.SetLevel(logrus.PanicLevel)
+		}
 		l.OsLogger.SetLevel(logrus.PanicLevel)
 	case "fatal":
-		l.FileLogger.SetLevel(logrus.FatalLevel)
+		if !l.config.FileLogDisabled {
+			l.FileLogger.SetLevel(logrus.FatalLevel)
+		}
 		l.OsLogger.SetLevel(logrus.FatalLevel)
 	default:
-		l.config.LogLevel = "trace"
+		if !l.config.FileLogDisabled {
+			l.config.LogLevel = "trace"
+		}
 		l.Log(logrus.WarnLevel, libTag, nil, "Unknown log level on log config update, trace level set", opts.LogLevel)
 	}
 

@@ -1,4 +1,4 @@
-module github.com/thiagohagy/main
+module github.com/thiagohagy/gologger-v2
 
 go 1.21.6
 

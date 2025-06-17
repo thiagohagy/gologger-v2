@@ -332,6 +332,8 @@ func (l *AppLogger) SetConfig(opts AppLoggerOptions) {
 
 	l.config.DisabledTags = opts.DisabledTags
 	l.config.LogLevel = opts.LogLevel
+	l.config.FileLogDisabled = opts.FileLogDisabled
+	l.config.MessageOptions = opts.MessageOptions
 
 	if opts.LogFileRotateDays != l.config.LogFileRotateDays && opts.LogFileRotateDays > 0 {
 		l.config.LogFileRotateDays = opts.LogFileRotateDays

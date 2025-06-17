@@ -7,9 +7,9 @@ https://github.com/sirupsen/logrus
 Install it by using:
 
 ```
-go get github.com/thiagohagy/gologger-v2```
+go get github.com/thiagohagy/gologger-v2
  
-//if you encounter an error try:
+#if you encounter an error try:
 GOPRIVATE=github.com/thiagohagy/gologger-v2 go get github.com/thiagohagy/gologger-v2
 ```
 Created to make possible to have logs separated by type and module, where you can enable/disable using the tags and logs types

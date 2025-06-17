@@ -162,6 +162,10 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 func NewMainLogger(config *AppLoggerOptions) *AppLogger {
 	// initial logger params with basic configuration, will be updated by the config
+	if config.MessageOptions == nil {
+		config.MessageOptions = &MessageOptions{}
+	}
+
 	logger := &AppLogger{
 		config: config,
 	}

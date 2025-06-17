@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -334,6 +335,9 @@ func (l *AppLogger) SetConfig(opts AppLoggerOptions) {
 	l.config.LogLevel = opts.LogLevel
 	l.config.FileLogDisabled = opts.FileLogDisabled
 	l.config.MessageOptions = opts.MessageOptions
+
+	log.Println(l.config.MessageOptions)
+	log.Println(opts.MessageOptions)
 
 	if opts.LogFileRotateDays != l.config.LogFileRotateDays && opts.LogFileRotateDays > 0 {
 		l.config.LogFileRotateDays = opts.LogFileRotateDays

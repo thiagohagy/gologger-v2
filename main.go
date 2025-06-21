@@ -97,7 +97,7 @@ type customEntryInfo struct {
 	useJsonOutput          bool
 }
 
-type JsonOutput struct {
+type jsonOutput struct {
 	Time    string `json:"time"`
 	Tag     string `json:"tag"`
 	Level   string `json:"level"`
@@ -116,7 +116,7 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 
 	if info.useJsonOutput || f.LogToFile {
-		jsonLog := &JsonOutput{
+		jsonLog := &jsonOutput{
 			Time:    entry.Time.Format(dateFormat),
 			Tag:     info.tag,
 			SubTags: info.subTags,
@@ -147,11 +147,11 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		}
 
 		endContent := info.textFiller + contentDelimiter
-		finalLogText := CompleteString(entry.Time.Format(dateFormat), len(dateFormat)+1, info.textFiller, info.disableSpacing) + endContent
+		finalLogText := completeString(entry.Time.Format(dateFormat), len(dateFormat)+1, info.textFiller, info.disableSpacing) + endContent
 		finalLogText += f.getLevelColor(entry.Level)
-		finalLogText += CompleteString("["+entry.Level.String()+"]", levelSize, info.textFiller, info.disableSpacing) + endContent
-		finalLogText += CompleteString(info.tag+contentDelimiter+subTags+resetColor, tagSize, info.textFiller, info.disableSpacing) + endContent
-		finalLogText += CompleteString(entry.Message, messageSize, info.textFiller, info.disableSpacing) + endContent
+		finalLogText += completeString("["+entry.Level.String()+"]", levelSize, info.textFiller, info.disableSpacing) + endContent
+		finalLogText += completeString(info.tag+contentDelimiter+subTags+resetColor, tagSize, info.textFiller, info.disableSpacing) + endContent
+		finalLogText += completeString(entry.Message, messageSize, info.textFiller, info.disableSpacing) + endContent
 		finalLogText += info.content + " \n"
 		output = []byte(finalLogText)
 	}
@@ -216,7 +216,7 @@ func NewMainLogger(config *AppLoggerOptions) *AppLogger {
 func (l *AppLogger) getLogFileName() string {
 	logFile := fmt.Sprintf("logs_%s", time.Now().UTC().Format(fileNameTimeFormat))
 	logFolder := "./logs/"
-	CreateFolderIfNotExists(logFolder)
+	createFolderIfNotExists(logFolder)
 	return fmt.Sprintf("%s%s.log", logFolder, logFile)
 }
 
@@ -388,11 +388,11 @@ func (l *AppLogger) SetConfig(opts AppLoggerOptions) {
 }
 
 // LOGGER
+func (l *AppLogger) NewLogger(tag string) *Logger {
 
-func NewLogger(tag string, appLogr *AppLogger) *Logger {
 	logger := &Logger{
 		tag:       tag,
-		appLogger: appLogr,
+		appLogger: l,
 	}
 
 	return logger
@@ -505,7 +505,7 @@ func (l *Logger) Fatal(message string, subTags []string, content ...string) {
 }
 
 // util functions
-func CreateFolderIfNotExists(folderPath string) error {
+func createFolderIfNotExists(folderPath string) error {
 	// Check if the folder already exists
 	_, err := os.Stat(folderPath)
 
@@ -523,7 +523,7 @@ func CreateFolderIfNotExists(folderPath string) error {
 	return nil
 }
 
-func CompleteString(originalString string, targetLength int, fillChar string, disableSpacing bool) string {
+func completeString(originalString string, targetLength int, fillChar string, disableSpacing bool) string {
 	// fill the original string with the fillChar
 	resultString := originalString
 	// Customize the log entry format
@@ -540,7 +540,7 @@ func CompleteString(originalString string, targetLength int, fillChar string, di
 	return resultString
 }
 
-func ConvertToString(value interface{}) string {
+func convertToString(value interface{}) string {
 
 	switch v := value.(type) {
 	case string:
@@ -552,7 +552,7 @@ func ConvertToString(value interface{}) string {
 	case []string:
 		strSlice := make([]string, len(v))
 		for i, item := range v {
-			strSlice[i] = ConvertToString(item)
+			strSlice[i] = convertToString(item)
 		}
 		return strings.Join(strSlice, ",")
 	default:
@@ -560,7 +560,7 @@ func ConvertToString(value interface{}) string {
 	}
 }
 
-func InterfaceToStringSlice(input interface{}) []string {
+func interfaceToStringSlice(input interface{}) []string {
 	if slice, ok := input.([]string); ok {
 		return slice
 	}
@@ -598,27 +598,27 @@ func (f *CustomFormatter) getCustomEntryInfo(entry *logrus.Entry) *customEntryIn
 	for i, v := range entry.Data {
 		switch i {
 		case "tag":
-			info.tag = ConvertToString(v)
+			info.tag = convertToString(v)
 			delete(entry.Data, "tag")
 		case "content":
-			info.content = ConvertToString(v)
+			info.content = convertToString(v)
 			delete(entry.Data, "content")
 		case "contentDelimiter":
-			info.contentDelimiter = ConvertToString(v)
+			info.contentDelimiter = convertToString(v)
 			delete(entry.Data, "contentDelimiter")
 		case "dateFormat":
-			info.dateFormat = ConvertToString(v)
+			info.dateFormat = convertToString(v)
 			delete(entry.Data, "dateFormat")
 		case "messagePrealocatedSize":
-			valInt, _ := strconv.ParseInt(ConvertToString(v), 10, 0)
+			valInt, _ := strconv.ParseInt(convertToString(v), 10, 0)
 			info.messagePrealocatedSize = int(valInt)
 			delete(entry.Data, "messagePrealocatedSize")
 		case "tagPrealocatedSize":
-			valInt, _ := strconv.ParseInt(ConvertToString(v), 10, 0)
+			valInt, _ := strconv.ParseInt(convertToString(v), 10, 0)
 			info.tagPrealocatedSize = int(valInt)
 			delete(entry.Data, "tagPrealocatedSize")
 		case "textFiller":
-			info.textFiller = ConvertToString(v)
+			info.textFiller = convertToString(v)
 			delete(entry.Data, "textFiller")
 		case "useJsonOutput":
 			if v == true {
@@ -635,7 +635,7 @@ func (f *CustomFormatter) getCustomEntryInfo(entry *logrus.Entry) *customEntryIn
 			}
 			delete(entry.Data, "disableSpacing")
 		case "subTags":
-			subTags := ConvertToString(v)
+			subTags := convertToString(v)
 			if len(subTags) > 0 {
 				info.subTags = subTags
 			} else {

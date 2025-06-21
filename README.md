@@ -108,7 +108,7 @@ appLogger.SetConfig(
 )
 ~~~
 
-#### Creating Loggers for your app:
+#### Creating Tagged Loggers for your app:
 To use it as intended, you should create multiple Loggers, each one with a unique Tag
 
 To create new Loggers you only need to pass the appLogger created and a unique Tag
@@ -117,7 +117,7 @@ For the subTags you can use a variable , nil or define its value each time
 
 ~~~go
 // creating a logger
-logger := gologger.NewLogger("YOUR_MODULE_LOG_TAG", appLogger)
+logger := appLogger.NewLogger("YOUR_MODULE_LOG_TAG")
 
 // using the logger
 subTags := []string{"tag", "tag"}
